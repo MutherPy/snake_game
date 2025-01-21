@@ -263,7 +263,11 @@ int main(){
         handle_snake_move(x, y, snake);
         handle_fruit_appearance(&fruit_x, &fruit_y, snake);
         draw(field, snake, fruit_x, fruit_y);
-        usleep(500000);
+        if(y_dir_sign == STOP) {
+            usleep(200000);
+        } else {
+            usleep(500000);
+        }
     }
     return 0;
 }
