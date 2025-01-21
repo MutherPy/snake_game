@@ -7,16 +7,22 @@
 #include <time.h>
 
 
-#define FIELD_SIZE_ROWS 10
-#define FIELD_SIZE_COLS 30
+#define FIELD_SIZE_ROWS 12
+#define FIELD_SIZE_COLS 33
+
+#define PLAY_FIELD_SIZE_ROWS 10
+#define PLAY_FIELD_SIZE_COLS 30
 
 #define PLUS '+'
 #define MINUS '-'
 #define STOP '0'
 
-#define FILLER '-'
+#define FILLER ' '
 #define PLAYER_BLOCK '#'
 #define FRUIT '@'
+#define BORDER_LR '|'
+#define BORDER_U '_'
+#define BORDER_D '-'
 
 
 int x = (int)(FIELD_SIZE_COLS / 2);
@@ -61,7 +67,6 @@ bool check_fruit_to_snake_coordinates(const int (*snake)[2], int possible_fr_x, 
     }
     if(good_count == snake_size) return true;
     return false;
-
 }
 
 void handle_fruit_appearance(int *fr_x, int *fr_y, const int (*snake)[2]){
@@ -70,8 +75,10 @@ void handle_fruit_appearance(int *fr_x, int *fr_y, const int (*snake)[2]){
     int r_x;
     int r_y;
     do {
-        r_x = rand() % FIELD_SIZE_COLS;
-        r_y = rand() % (FIELD_SIZE_ROWS);
+        r_x = rand() % PLAY_FIELD_SIZE_COLS;
+        if (r_x == 0 ) r_x++;
+        r_y = rand() % PLAY_FIELD_SIZE_ROWS;
+        if (r_y == 0) r_y++;
         good = check_fruit_to_snake_coordinates(snake, r_x, r_y);
     } while (!good);
 
@@ -81,22 +88,62 @@ void handle_fruit_appearance(int *fr_x, int *fr_y, const int (*snake)[2]){
 }
 
 
-void draw(char (*field)[FIELD_SIZE_COLS+1], int (*snake)[2], int fr_x, int fr_y){
+void _draw_field_edge(int x, int y, char (*field)[FIELD_SIZE_COLS]){
+    if(x == FIELD_SIZE_COLS-1){
+        field[y][x+1] = '\0';
+    }
+}
+
+bool _draw_borders(int x, int y, char (*field)[FIELD_SIZE_COLS]){
+    bool result = false;
+    if(y == 0){
+        for(int i=0; i<FIELD_SIZE_COLS; i++) {
+            field[y][i] = BORDER_U;
+        }
+        result = true;
+    } else if (y == FIELD_SIZE_ROWS-1){
+        for(int i=0; i<FIELD_SIZE_COLS; i++) {
+            field[y][i] = BORDER_D;
+        }
+        result = true;
+    }
+    else if (x == 0 || x == FIELD_SIZE_COLS-1){
+        field[y][x] = BORDER_LR;
+        result = true;
+    }
+    _draw_field_edge(x, y, field);
+    return result;
+}
+
+void _draw_filler(int x, int y, char (*field)[FIELD_SIZE_COLS]){
+    field[y][x] = FILLER;
+}
+
+void _draw_snake(int x, int y, char (*field)[FIELD_SIZE_COLS], int (*snake)[2]){
+    for(int k = 0; k < snake_size; k++){
+        if(x == snake[k][0] && y == snake[k][1]){
+            field[y][x] = PLAYER_BLOCK;
+        }
+    }
+}
+
+void _draw_fruit(int x, int y, int fr_x, int fr_y, char (*field)[FIELD_SIZE_COLS]){
+    if (x == fr_x && y == fr_y){
+        field[y][x] = FRUIT;
+    }
+}
+
+void draw(char (*field)[FIELD_SIZE_COLS], int (*snake)[2], int fr_x, int fr_y){
     printf("Start\n");
+    bool stop_draw = false;
     for(int i = 0; i < FIELD_SIZE_ROWS; i++){
         for(int j = 0; j < FIELD_SIZE_COLS; j++){
-            field[i][j] = FILLER;
-            for(int k = 0; k < 4; k++){
-                if(i == snake[k][1] && j == snake[k][0]){
-                    field[i][j] = PLAYER_BLOCK;
-                } else if (i == fr_y && j == fr_x){
-                    field[i][j] = FRUIT;
-                }
-                if(j == FIELD_SIZE_COLS-1){
-                    field[i][j+1] = '\0';
-                    continue;
-                }
-            }
+            stop_draw = _draw_borders(j, i, field);
+            if (stop_draw) continue;
+            _draw_filler(j, i, field);
+            _draw_snake(j, i, field, snake);
+            _draw_fruit(j, i, fr_x, fr_y, field);
+            _draw_field_edge(j, i, field);
         }
         printf("%s\n", field[i]);
     }
@@ -111,17 +158,17 @@ void eaten_fruit_control(int x, int y, int fr_x, int fr_y, bool *fruit_eaten){
 }
 
 void edge_control(int *x, int *y){
-    if(*x > FIELD_SIZE_COLS-1){
-        *x = FIELD_SIZE_COLS-1;
+    if(*x > PLAY_FIELD_SIZE_COLS+1){
+        *x = PLAY_FIELD_SIZE_COLS+1;
     }
-    else if (*x < 0) {
-        *x = 0;
+    else if (*x < 1) {
+        *x = 1;
     }
-    if(*y > FIELD_SIZE_ROWS-1){
-        *y = FIELD_SIZE_ROWS-1;
+    if(*y > PLAY_FIELD_SIZE_ROWS){
+        *y = PLAY_FIELD_SIZE_ROWS;
     }
-    else if (*y < 0) {
-        *y = 0;
+    else if (*y < 1) {
+        *y = 1;
     }
 }
 
@@ -205,7 +252,7 @@ int main(){
 
     srand(time(NULL));
 
-    char field[FIELD_SIZE_ROWS][FIELD_SIZE_COLS+1] = {{}, {}};
+    char field[FIELD_SIZE_ROWS][FIELD_SIZE_COLS] = {{}, {}};
 
     int snake[4][2] = {{x,y}, {x, y+1}, {x, y+2}, {x, y+3}};
 
@@ -216,7 +263,7 @@ int main(){
         handle_snake_move(x, y, snake);
         handle_fruit_appearance(&fruit_x, &fruit_y, snake);
         draw(field, snake, fruit_x, fruit_y);
-        sleep(1);
+        usleep(500000);
     }
     return 0;
 }
