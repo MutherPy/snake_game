@@ -25,21 +25,8 @@
 #define BORDER_D '-'
 
 
-int x = (int)(FIELD_SIZE_COLS / 2);
-int y = (int)(FIELD_SIZE_ROWS / 2);
-
-char x_dir_sign = STOP;
-char y_dir_sign = MINUS;
-
-char *p_x_dir_sign = &x_dir_sign;
-char *p_y_dir_sign = &y_dir_sign;
-
-int snake_size = 4;
-
-int fruit_x = 0;
-int fruit_y = 0;
-
-bool fruit_eaten = true;
+int SNAKE_SIZE = 4;
+bool FRUIT_EATEN = true;
 
 
 void handle_snake_move(int x, int y, int (*snake)[2]){
@@ -60,17 +47,17 @@ void handle_snake_move(int x, int y, int (*snake)[2]){
 
 bool check_fruit_to_snake_coordinates(const int (*snake)[2], int possible_fr_x, int possible_fr_y){
     int good_count = 0;
-    for(int i = 0;  i < snake_size; i++) {
+    for(int i = 0; i < SNAKE_SIZE; i++) {
         if((snake[i][0] != possible_fr_x) && (snake[i][1] != possible_fr_y)){
             good_count++;
         } else return false;
     }
-    if(good_count == snake_size) return true;
+    if(good_count == SNAKE_SIZE) return true;
     return false;
 }
 
 void handle_fruit_appearance(int *fr_x, int *fr_y, const int (*snake)[2]){
-    if(!fruit_eaten) return;
+    if(!FRUIT_EATEN) return;
     bool good = false;
     int r_x;
     int r_y;
@@ -84,7 +71,7 @@ void handle_fruit_appearance(int *fr_x, int *fr_y, const int (*snake)[2]){
 
     *fr_x = r_x;
     *fr_y = r_y;
-    fruit_eaten = false;
+    FRUIT_EATEN = false;
 }
 
 
@@ -120,7 +107,7 @@ void _draw_filler(int x, int y, char (*field)[FIELD_SIZE_COLS]){
 }
 
 void _draw_snake(int x, int y, char (*field)[FIELD_SIZE_COLS], int (*snake)[2]){
-    for(int k = 0; k < snake_size; k++){
+    for(int k = 0; k < SNAKE_SIZE; k++){
         if(x == snake[k][0] && y == snake[k][1]){
             field[y][x] = PLAYER_BLOCK;
         }
@@ -172,7 +159,7 @@ void edge_control(int *x, int *y){
     }
 }
 
-void position(int *x, int *y, char *x_dir_sign, char *y_dir_sign){
+void position(int *x, int *y, char *x_dir_sign, char *y_dir_sign, int fruit_x, int fruit_y){
     switch (*x_dir_sign)
     {
     case MINUS:
@@ -192,7 +179,7 @@ void position(int *x, int *y, char *x_dir_sign, char *y_dir_sign){
         break;
     }
     edge_control(x, y);
-    eaten_fruit_control(*x, *y, fruit_x, fruit_y, &fruit_eaten);
+    eaten_fruit_control(*x, *y, fruit_x, fruit_y, &FRUIT_EATEN);
 }
 
 
@@ -221,6 +208,10 @@ _Noreturn void *keyboard_reader(void *vargp){
     info.c_cc[VMIN] = 1;          /* wait until at least one keystroke available */
     info.c_cc[VTIME] = 0;         /* no timeout */
     tcsetattr(0, TCSANOW, &info); /* set immediately */
+
+    char *p_x_dir_sign = (*(char* (*)[2])vargp)[0];
+    char *p_y_dir_sign = (*(char* (*)[2])vargp)[1];
+
     while (1)
     {
         key = (char)getchar();
@@ -246,8 +237,27 @@ _Noreturn void *keyboard_reader(void *vargp){
 
 int main(){
 
+    // TODO
+    //  2) try to add increasing snake length
+    //  3) try to add 'Game Over' or appearance snake from d to up from l to r
+
+    int x = (int)(FIELD_SIZE_COLS / 2);
+    int y = (int)(FIELD_SIZE_ROWS / 2);
+
+    char x_dir_sign = STOP;
+    char y_dir_sign = MINUS;
+
+    char *p_x_dir_sign = &x_dir_sign;
+    char *p_y_dir_sign = &y_dir_sign;
+
+    char *th_arg[2] = {p_x_dir_sign, p_y_dir_sign};
+
+    int fruit_x = 0;
+    int fruit_y = 0;
+
+
     pthread_t thread_id;
-    pthread_create(&thread_id, NULL, keyboard_reader, NULL);
+    pthread_create(&thread_id, NULL, keyboard_reader, th_arg);
     // pthread_join(thread_id, NULL);
 
     srand(time(NULL));
@@ -259,7 +269,7 @@ int main(){
     while (1)
     {
         system("clear");
-        position(&x, &y, p_x_dir_sign, p_y_dir_sign);
+        position(&x, &y, p_x_dir_sign, p_y_dir_sign, fruit_x, fruit_y);
         handle_snake_move(x, y, snake);
         handle_fruit_appearance(&fruit_x, &fruit_y, snake);
         draw(field, snake, fruit_x, fruit_y);
