@@ -24,7 +24,7 @@
 #define BORDER_D '-'
 
 
-int SNAKE_SIZE = 5;
+int SNAKE_SIZE = 50;
 bool FRUIT_EATEN = true;
 
 
@@ -77,17 +77,17 @@ int** handle_snake_move(int x, int y, int **snake){
 
 bool check_fruit_to_snake_coordinates(int** snake, int possible_fr_x, int possible_fr_y){
     for(int i = 0; i < SNAKE_SIZE; i++) {
-        if(!((snake[i][0] != possible_fr_x) && (snake[i][1] != possible_fr_y))){
-            return false;
+        if((snake[i][0] == possible_fr_x) && (snake[i][1] == possible_fr_y)){
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 // TODO optimize searching algo for fruit. make difs between field and snake -> feed to randomizer what left
 void handle_fruit_appearance(int *fr_x, int *fr_y, int** snake){
     if(!FRUIT_EATEN) return;
-    bool good = false;
+    bool finding_good = false;
     int r_x;
     int r_y;
     do {
@@ -95,8 +95,9 @@ void handle_fruit_appearance(int *fr_x, int *fr_y, int** snake){
         if (r_x == 0 ) r_x++;
         r_y = rand() % PLAY_FIELD_SIZE_ROWS;
         if (r_y == 0) r_y++;
-        good = check_fruit_to_snake_coordinates(snake, r_x, r_y);
-    } while (!good);
+        finding_good = check_fruit_to_snake_coordinates(snake, r_x, r_y);
+        printf("x=%i y=%i\n", r_x, r_y);
+    } while (finding_good);
 
     *fr_x = r_x;
     *fr_y = r_y;
@@ -267,7 +268,6 @@ _Noreturn void *keyboard_reader(void *vargp){
 int main(){
 
     // TODO
-    //  2) try to add increasing snake length
     //  3) try to add 'Game Over' or appearance snake from d to up from l to r
 
     int x = (int)(FIELD_SIZE_COLS / 2);
