@@ -23,11 +23,13 @@
 #define BORDER_U '_'
 #define BORDER_D '-'
 
-#define SN_CONTAINER_INCREASE 3
+#define SN_CONTAINER_INCREASE 10
 
-int SNAKE_SIZE = 9;
-int SNAKE_CONTAINER_SIZE = 10;
+int SNAKE_SIZE = 5;
+int SNAKE_CONTAINER_SIZE = 15;
 bool FRUIT_EATEN = true;
+
+bool GAME_OVER = false;
 
 
 void snake_move(int x, int y, int **snake){
@@ -44,7 +46,7 @@ void snake_move(int x, int y, int **snake){
     }
 }
 
-void fix_free_snake(int size, int** snake){
+void free_snake(int size, int** snake){
     if(size==0){
         free(snake[0]);
         return;
@@ -63,7 +65,7 @@ int** memory_allocation(){
     for(int i=0; i<SNAKE_CONTAINER_SIZE; i++){
         item = (int*)calloc(2, sizeof(int));
         if(item == NULL){
-            fix_free_snake(i, container);
+            free_snake(i, container);
             return NULL;
         }
         container[i] = item;
@@ -81,7 +83,7 @@ int** memory_reallocation(int** snake){
     for(int i = SNAKE_CONTAINER_SIZE-SN_CONTAINER_INCREASE; i < SNAKE_CONTAINER_SIZE; i++){
         item = (int*)calloc(2, sizeof(int));
         if(item == NULL){
-            fix_free_snake(i, new_snake_ptr);
+            free_snake(i, new_snake_ptr);
             return NULL;
         }
         new_snake_ptr[i] = item;
@@ -225,15 +227,29 @@ void eaten_fruit_control(int x, int y, int fr_x, int fr_y, bool *fruit_eaten){
 void edge_control(int *x, int *y){
     if(*x > PLAY_FIELD_SIZE_COLS+1){
         *x = PLAY_FIELD_SIZE_COLS+1;
+        GAME_OVER = true;
     }
     else if (*x < 1) {
         *x = 1;
+        GAME_OVER = true;
     }
     if(*y > PLAY_FIELD_SIZE_ROWS){
         *y = PLAY_FIELD_SIZE_ROWS;
+        GAME_OVER = true;
     }
     else if (*y < 1) {
         *y = 1;
+        GAME_OVER = true;
+    }
+}
+
+void snake_overlap_control(int** snake){
+    int x = snake[0][0];
+    int y = snake[0][1];
+    for(int i = 1; i < SNAKE_SIZE; i++){
+        if(x == snake[i][0] && y == snake[i][1]){
+            GAME_OVER = true;
+        }
     }
 }
 
@@ -314,6 +330,8 @@ _Noreturn void *keyboard_reader(void *vargp){
 
 int main(){
 
+    regame: printf("New game!");
+
     int x = (int)(FIELD_SIZE_COLS / 2);
     int y = (int)(FIELD_SIZE_ROWS / 2);
 
@@ -352,8 +370,19 @@ int main(){
         if(snake == NULL){
             return 1;
         }
+        snake_overlap_control(snake);
         handle_fruit_appearance(&fruit_x, &fruit_y, snake);
         draw(field, snake, fruit_x, fruit_y);
+        if (GAME_OVER) {
+            printf("GAME OVER ;(\n");
+            GAME_OVER = false;
+            SNAKE_SIZE = 9;
+            SNAKE_CONTAINER_SIZE = 10;
+            FRUIT_EATEN = true;
+            free_snake(SNAKE_CONTAINER_SIZE, snake);
+            sleep(3);
+            goto regame;
+        }
         if(y_dir_sign == STOP) {
             usleep(200000);
         } else {
