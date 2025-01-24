@@ -23,9 +23,9 @@
 #define BORDER_U '_'
 #define BORDER_D '-'
 
-#define SN_CONTAINER_INCREASE 10
+#define SN_CONTAINER_INCREASE 3
 
-int SNAKE_SIZE = 5;
+int SNAKE_SIZE = 9;
 int SNAKE_CONTAINER_SIZE = 10;
 bool FRUIT_EATEN = true;
 
@@ -44,13 +44,6 @@ void snake_move(int x, int y, int **snake){
     }
 }
 
-void free_old_snake(int **old_snake){
-    for(int i=0; i< SNAKE_SIZE-1; i++){
-        free(old_snake[i]);
-    }
-    free(old_snake);
-}
-
 void fix_free_snake(int size, int** snake){
     if(size==0){
         free(snake[0]);
@@ -61,8 +54,6 @@ void fix_free_snake(int size, int** snake){
     }
 }
 
-
-// TODO enhance not to calock all with free and filling, but allocate new container, and fill with old pointers
 int** memory_allocation(){
     int** container = (int**)calloc(SNAKE_CONTAINER_SIZE, sizeof(int*));
     if(container == NULL){
@@ -80,6 +71,24 @@ int** memory_allocation(){
     return container;
 }
 
+int** memory_reallocation(int** snake){
+    SNAKE_CONTAINER_SIZE += SN_CONTAINER_INCREASE;
+    int** new_snake_ptr = (int**)realloc(snake, SNAKE_CONTAINER_SIZE * sizeof(int*));
+    if(new_snake_ptr == NULL){
+        return NULL;
+    }
+    int* item;
+    for(int i = SNAKE_CONTAINER_SIZE-SN_CONTAINER_INCREASE; i < SNAKE_CONTAINER_SIZE; i++){
+        item = (int*)calloc(2, sizeof(int));
+        if(item == NULL){
+            fix_free_snake(i, new_snake_ptr);
+            return NULL;
+        }
+        new_snake_ptr[i] = item;
+    }
+    return new_snake_ptr;
+}
+
 int** init_fill(int x, int y){
     int** container = memory_allocation();
     if(container == NULL){
@@ -93,17 +102,10 @@ int** init_fill(int x, int y){
 }
 
 int** work_fill(int** snake){
-    SNAKE_CONTAINER_SIZE += SN_CONTAINER_INCREASE;
-    int** container = memory_allocation();
+    int** container = memory_reallocation(snake);
     if(container == NULL){
         return NULL;
     }
-    for(int i=0; i<SNAKE_SIZE; i++){
-        for (int j = 0; j < 2; j++) {
-            container[i][j] = snake[i][j];
-        }
-    }
-    free_old_snake(snake);
     return container;
 }
 
@@ -196,8 +198,7 @@ void _draw_fruit(int x, int y, int fr_x, int fr_y, char (*field)[FIELD_SIZE_COLS
 
 void draw(char (*field)[FIELD_SIZE_COLS], int** snake, int fr_x, int fr_y){
     printf("Start\n");
-    printf("SIZE - %i  MEMORY - %i\n", SNAKE_SIZE, SNAKE_CONTAINER_SIZE);
-    printf("snake -- %p\n", snake);
+    printf("SIZE - %i\n", SNAKE_SIZE);
     bool stop_draw = false;
     for(int i = 0; i < FIELD_SIZE_ROWS; i++){
         for(int j = 0; j < FIELD_SIZE_COLS; j++){
@@ -343,7 +344,6 @@ int main(){
     if(snake == NULL){
         return 1;
     }
-
     while (1)
     {
         system("clear");
