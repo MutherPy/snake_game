@@ -24,7 +24,8 @@
 #define BORDER_D '-'
 
 
-int SNAKE_SIZE = 50;
+int SNAKE_SIZE = 8;
+int SNAKE_CONTAINER_SIZE = 10;
 bool FRUIT_EATEN = true;
 
 
@@ -42,33 +43,74 @@ void snake_move(int x, int y, int **snake){
     }
 }
 
-int** snake_fill(int x, int y, int** snake){
-    int** container = (int**)calloc(SNAKE_SIZE, 2*sizeof(int*));
-    for(int i=0; i<SNAKE_SIZE; i++){
-        int* item = (int*)calloc(2, sizeof(int));
-        container[i] = item;
-        if(snake == NULL){
-            item[0] = x;
-            item[1] = y + i;
-        } else {
-            for(int j=0; j<2; j++){
-                if(i < SNAKE_SIZE-1){
-                    item[j] = snake[i][j];
-                } else {
-                    item[j] = j;
-                }
-            }
+void free_old_snake(int **old_snake){
+    for(int i=0; i< SNAKE_SIZE-1; i++){
+        free(old_snake[i]);
+    }
+    free(old_snake);
+}
+
+void fix_free_snake(int size, int** snake){
+    if(size==0){
+        free(snake[0]);
+        return;
+    }
+    for(int i=0; i<size; i++){
+        free(snake[i]);
+    }
+}
+
+
+int** memory_allocation(){
+    int** container = (int**)calloc(SNAKE_CONTAINER_SIZE, sizeof(int*));
+    if(container == NULL){
+        return NULL;
+    }
+    int* item;
+    for(int i=0; i<SNAKE_CONTAINER_SIZE; i++){
+        item = (int*)calloc(2, sizeof(int));
+        if(item == NULL){
+            fix_free_snake(i, container);
+            return NULL;
         }
+        container[i] = item;
     }
     return container;
 }
 
+int** init_fill(int x, int y){
+    int** container = memory_allocation();
+    if(container == NULL){
+        return NULL;
+    }
+    for (int i = 0; i < SNAKE_SIZE; i++) {
+        container[i][0] = x;
+        container[i][1] = y + i;
+    }
+    return container;
+}
+
+int** work_fill(int** snake){
+    SNAKE_CONTAINER_SIZE *= 2;
+    int** container = memory_allocation();
+    if(container == NULL){
+        return NULL;
+    }
+    for(int i=0; i<SNAKE_SIZE; i++){
+        for (int j = 0; j < 2; j++) {
+            container[i][j] = snake[i][j];
+        }
+    }
+    free_old_snake(snake);
+    return container;
+}
+
 int** handle_snake_move(int x, int y, int **snake){
-    if(FRUIT_EATEN){
-        int** container = snake_fill(x, y, snake);
-        snake_move(x, y, container);
-        free(snake);
-        return container;
+    if(FRUIT_EATEN && (SNAKE_SIZE >= SNAKE_CONTAINER_SIZE)){
+        snake = work_fill(snake);
+        if(snake == NULL){
+            return NULL;
+        }
     }
     snake_move(x, y, snake);
     return snake;
@@ -96,7 +138,7 @@ void handle_fruit_appearance(int *fr_x, int *fr_y, int** snake){
         r_y = rand() % PLAY_FIELD_SIZE_ROWS;
         if (r_y == 0) r_y++;
         finding_good = check_fruit_to_snake_coordinates(snake, r_x, r_y);
-        printf("x=%i y=%i\n", r_x, r_y);
+//        printf("x=%i y=%i\n", r_x, r_y);
     } while (finding_good);
 
     *fr_x = r_x;
@@ -152,6 +194,8 @@ void _draw_fruit(int x, int y, int fr_x, int fr_y, char (*field)[FIELD_SIZE_COLS
 
 void draw(char (*field)[FIELD_SIZE_COLS], int** snake, int fr_x, int fr_y){
     printf("Start\n");
+    printf("SIZE - %i  MEMORY - %i\n", SNAKE_SIZE, SNAKE_CONTAINER_SIZE);
+    printf("snake -- %p\n", snake);
     bool stop_draw = false;
     for(int i = 0; i < FIELD_SIZE_ROWS; i++){
         for(int j = 0; j < FIELD_SIZE_COLS; j++){
@@ -267,9 +311,6 @@ _Noreturn void *keyboard_reader(void *vargp){
 
 int main(){
 
-    // TODO
-    //  3) try to add 'Game Over' or appearance snake from d to up from l to r
-
     int x = (int)(FIELD_SIZE_COLS / 2);
     int y = (int)(FIELD_SIZE_ROWS / 2);
 
@@ -293,13 +334,22 @@ int main(){
 
     char field[FIELD_SIZE_ROWS][FIELD_SIZE_COLS] = {{}, {}};
 
-    int** snake = snake_fill(x, y, NULL);
+    int** snake = init_fill(x, y);
+    for(int i = 0; i<SNAKE_CONTAINER_SIZE; i++){
+        printf("%i %i\n", snake[i][0], snake[i][1]);
+    }
+    if(snake == NULL){
+        return 1;
+    }
 
     while (1)
     {
         system("clear");
         position(&x, &y, p_x_dir_sign, p_y_dir_sign, fruit_x, fruit_y);
         snake = handle_snake_move(x, y, snake);
+        if(snake == NULL){
+            return 1;
+        }
         handle_fruit_appearance(&fruit_x, &fruit_y, snake);
         draw(field, snake, fruit_x, fruit_y);
         if(y_dir_sign == STOP) {
