@@ -346,12 +346,11 @@ int main(){
     int fruit_x = 0;
     int fruit_y = 0;
 
-
-    pthread_t thread_id;
-    pthread_create(&thread_id, NULL, keyboard_reader, th_arg);
-    // pthread_join(thread_id, NULL);
-
-    srand(time(NULL));
+    static pthread_t thread_id;
+    if (!thread_id) {
+        pthread_create(&thread_id, NULL, keyboard_reader, th_arg);
+        srand(time(NULL));
+    }
 
     char field[FIELD_SIZE_ROWS][FIELD_SIZE_COLS] = {{}, {}};
 
@@ -376,7 +375,7 @@ int main(){
         if (GAME_OVER) {
             printf("GAME OVER ;(\n");
             GAME_OVER = false;
-            SNAKE_SIZE = 9;
+            SNAKE_SIZE = 5;
             SNAKE_CONTAINER_SIZE = 10;
             FRUIT_EATEN = true;
             free_snake(SNAKE_CONTAINER_SIZE, snake);
