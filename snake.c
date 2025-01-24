@@ -23,8 +23,9 @@
 #define BORDER_U '_'
 #define BORDER_D '-'
 
+#define SN_CONTAINER_INCREASE 10
 
-int SNAKE_SIZE = 8;
+int SNAKE_SIZE = 5;
 int SNAKE_CONTAINER_SIZE = 10;
 bool FRUIT_EATEN = true;
 
@@ -61,6 +62,7 @@ void fix_free_snake(int size, int** snake){
 }
 
 
+// TODO enhance not to calock all with free and filling, but allocate new container, and fill with old pointers
 int** memory_allocation(){
     int** container = (int**)calloc(SNAKE_CONTAINER_SIZE, sizeof(int*));
     if(container == NULL){
@@ -91,7 +93,7 @@ int** init_fill(int x, int y){
 }
 
 int** work_fill(int** snake){
-    SNAKE_CONTAINER_SIZE *= 2;
+    SNAKE_CONTAINER_SIZE += SN_CONTAINER_INCREASE;
     int** container = memory_allocation();
     if(container == NULL){
         return NULL;
