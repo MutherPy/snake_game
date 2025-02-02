@@ -35,15 +35,12 @@ bool GAME_OVER = false;
 void snake_move(int x, int y, int **snake){
     if(x == snake[0][0] && y == snake[0][1])
         return;
-    for(int i = SNAKE_SIZE-1; i >= 0; i--){
-        if(i > 0){
-            snake[i][0] = snake[i-1][0];
-            snake[i][1] = snake[i-1][1];
-        } else {
-            snake[0][0] = x;
-            snake[0][1] = y;
-        }
+    for(int i = SNAKE_SIZE-1; i > 0; i--){
+        snake[i][0] = snake[i-1][0];
+        snake[i][1] = snake[i-1][1];
     }
+    snake[0][0] = x;
+    snake[0][1] = y;
 }
 
 void free_snake(int size, int** snake){

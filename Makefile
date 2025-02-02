@@ -8,3 +8,5 @@ run:
 build: compile run
 
 .PHONY: build
+
+.DEFAULT_GOAL := build
